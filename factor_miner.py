@@ -125,8 +125,8 @@ class FactorMinerCaseConfig:
     provider_uri: Path = DEFAULT_PROVIDER_URI
     module_name: str = GENERATED_SIGNAL_MODULE
     instruments: str = "csi500"
-    start: str = "2024-01-01"
-    end: str = "2025-12-31"
+    start: str = "2023-01-01"
+    end: str = "2024-12-31"
     benchmark: str = "SH000905"
     topk: int = 50
     n_drop: int = 5
@@ -1096,8 +1096,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--provider-uri", default=str(DEFAULT_PROVIDER_URI))
     parser.add_argument("--module-name", default=GENERATED_SIGNAL_MODULE)
     parser.add_argument("--instruments", default="csi500")
-    parser.add_argument("--start", default="2024-01-01")
-    parser.add_argument("--end", default="2025-12-31")
+    parser.add_argument("--start", default="2023-01-01")
+    parser.add_argument("--end", default="2024-12-31")
     parser.add_argument("--benchmark", default="SH000905")
     parser.add_argument("--topk", type=int, default=50)
     parser.add_argument("--n-drop", type=int, default=5)

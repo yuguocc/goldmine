@@ -189,9 +189,9 @@ def test_oos_period_uses_config_default_dates():
     period = FactorLibraryPortfolioService.oos_period(ParallelReflexionConfig())
 
     assert period == {
-        "in_sample_end": "2025-12-31",
+        "in_sample_end": "2024-12-31",
         "start": "2025-01-01",
-        "end": "2026-12-31",
+        "end": "2026-01-31",
         "warmup_start": "2024-01-01",
         "warmup_days": 366,
         "source": {
@@ -277,7 +277,7 @@ def test_final_oos_recomputes_components_and_runs_portfolio(monkeypatch):
                         "2024-12-31",
                         "2025-01-01",
                         "2025-01-01",
-                        "2026-12-31",
+                        "2026-01-31",
                     ],
                     "code": ["A", "A", "B", "A"],
                     "close": [10.0, 11.0, 20.0, 12.0],
@@ -291,7 +291,7 @@ def test_final_oos_recomputes_components_and_runs_portfolio(monkeypatch):
             analyze_calls.append(kwargs)
             factor_df = kwargs["factor_df"]
             assert factor_df["trade_time"].min() == "2025-01-01"
-            assert factor_df["trade_time"].max() == "2026-12-31"
+            assert factor_df["trade_time"].max() == "2026-01-31"
             return {
                 "metrics": {
                     "score": {
@@ -330,7 +330,7 @@ def test_final_oos_recomputes_components_and_runs_portfolio(monkeypatch):
 
     assert result["status"] == "oos_portfolio_completed"
     assert result["oos_period"]["start"] == "2025-01-01"
-    assert result["oos_period"]["end"] == "2026-12-31"
+    assert result["oos_period"]["end"] == "2026-01-31"
     assert result["composite_rank_ic"] == 0.234
     assert len(compute_calls) == 2
     assert {call["signal_modules"][0] for call in compute_calls} == {
@@ -338,7 +338,7 @@ def test_final_oos_recomputes_components_and_runs_portfolio(monkeypatch):
         "FactorB",
     }
     assert {call["start"] for call in compute_calls} == {"2024-01-01"}
-    assert {call["end"] for call in compute_calls} == {"2026-12-31"}
+    assert {call["end"] for call in compute_calls} == {"2026-01-31"}
     assert len(analyze_calls) == 1
     assert len(portfolio_calls) == 1
     assert Path(result["composite_factor_csv"]).exists()

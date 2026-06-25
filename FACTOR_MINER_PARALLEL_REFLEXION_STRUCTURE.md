@@ -31,8 +31,8 @@ src/factor_miner_parallel_reflexion/
 
 Default date windows:
 
-- Training: `2024-01-01` to `2025-12-31`
-- OOS: `2025-01-01` to `2026-12-31`
+- Training: `2023-01-01` to `2024-12-31`
+- OOS: `2025-01-01` to `2026-01-31`
 
 ```text
 ParallelReflexionCLI
@@ -71,10 +71,10 @@ the system wraps the RLM-provided compute body into that BaseSignal class.
 The generator input is split to reduce tool calls and iterations:
 
 - Context carries available fields, available libraries, helpers, compact
-  `existing_factors`, a duplicate-avoidance policy, and a plain-text
-  `parallel_generation`.
+  `memory_priors`, compact `existing_factors`, a duplicate-avoidance policy,
+  and a plain-text `parallel_generation`.
 - Query carries only the short task, fixed runnable-check flow, output format,
-  and memory patterns.
+  and instructions to read memory from context.
 
 The default RLM generation cap is 5 iterations. This is intended to cover
 compute-body generation, one `submit_compute` runnable check, and a small
@@ -141,6 +141,7 @@ The candidate context contains only the necessary runtime state:
 - `available_data_fields`
 - `available_libraries`
 - `available_helpers`
+- `memory_priors`, compact prior Reflexion memory retrieved before generation
 - `parallel_generation`, a plain-text string with `factor_class_name` and
   research assignment details
 - `candidate_mode`, either `novelty` or `mutation`
@@ -207,7 +208,7 @@ The plotting result is embedded in `summary.json` as
 the factor-mining run.
 
 After all rounds finish, the runner performs one final out-of-sample test. By
-default it uses `2025-01-01` to `2026-12-31`. The OOS window can be configured
+default it uses `2025-01-01` to `2026-01-31`. The OOS window can be configured
 with `--oos-start`, `--oos-end`, and `--oos-warmup-start`.
 
 It recomputes every accepted library factor on the OOS window, rebuilds the same

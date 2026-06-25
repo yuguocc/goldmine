@@ -236,17 +236,31 @@ def test_economic_reflexion_updates_factorminer_memory_priors():
     assert "hypothesis_slots" not in manager.to_dict()["state"]
 
 
-def test_candidate_query_uses_factorminer_memory_priors_not_diversity():
+def test_candidate_context_uses_factorminer_memory_priors_not_query():
     branch = branch_for_candidate(round_number=1, candidate_index=5)
+    memory_text = "## Factorminer Memory Priors\n- none"
+    job = CandidateJobFactory(ParallelReflexionConfig(candidates=3)).make_jobs(
+        round_number=1,
+        round_dir=_workspace_tmp("memory_context"),
+        memory_text=memory_text,
+    )[1]
+    context = CandidatePromptBuilder().context(job)
     query = CandidatePromptBuilder().query(
         "RlmGeneratedFactorR001C001",
-        "## Factorminer Memory Priors\n- none",
         candidate_index=2,
         candidate_count=3,
         research_branch=branch,
     )
 
-    assert "Memory priors:" in query
+    assert context["memory_priors"] == memory_text
+    assert "Factorminer Memory Priors" not in query
+    assert "Factorminer Memory Priors" not in CandidatePromptBuilder().query(
+        "RlmGeneratedFactorR001C001",
+        memory_text,
+        candidate_index=2,
+        candidate_count=3,
+        research_branch=branch,
+    )
     assert "Research Assignment:" in query
     assert "Candidate Mode:" in query
     assert "mode: novelty" in query
@@ -380,7 +394,6 @@ def test_candidate_job_factory_uses_three_novelty_plus_three_mutation_slots():
     context = CandidatePromptBuilder().context(jobs[3])
     query = CandidatePromptBuilder().query(
         jobs[3].module_name,
-        "memory",
         candidate_index=jobs[3].candidate_index,
         candidate_count=jobs[3].candidate_count,
         research_branch=jobs[3].research_branch,
@@ -500,10 +513,10 @@ def test_cli_default_training_and_oos_dates():
         ParallelReflexionCLI().parse_args(["--rounds", "1"])
     )
 
-    assert config.start == "2024-01-01"
-    assert config.end == "2025-12-31"
+    assert config.start == "2023-01-01"
+    assert config.end == "2024-12-31"
     assert config.oos_start == "2025-01-01"
-    assert config.oos_end == "2026-12-31"
+    assert config.oos_end == "2026-01-31"
     assert config.oos_warmup_start is None
 
 

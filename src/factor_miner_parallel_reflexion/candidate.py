@@ -67,7 +67,7 @@ class CandidatePromptBuilder:
     def query(
         self,
         module_name: str,
-        memory_text: str,
+        memory_text: str = "",
         *,
         candidate_index: int = 1,
         candidate_count: int = 1,
@@ -76,6 +76,8 @@ class CandidatePromptBuilder:
         mutation_parent: dict[str, Any] | None = None,
         mutation_axis: str = "",
     ) -> str:
+        # Compatibility shim: memory is now supplied through context["memory_priors"].
+        _ = memory_text
         branch_text = self.research_assignment_text(research_branch)
         mode_text = self.candidate_mode_text(
             candidate_mode=candidate_mode,
@@ -109,7 +111,7 @@ class CandidatePromptBuilder:
             "horizon, gate, sign flip, or parameter-only variant, then choose a "
             "materially different mechanism inside the assigned branch.\n"
             "5. Treat Research Assignment as the primary style constraint. "
-            "Read Memory priors as secondary guidance: prefer Recommended Directions (P_succ), "
+            "Read context.memory_priors as secondary guidance: prefer Recommended Directions (P_succ), "
             "avoid Forbidden Directions (P_fail), and use Strategic Insights (I). "
             "If Memory priors conflict with the assigned branch, stay inside the "
             "branch but choose a safer mechanism.\n"
@@ -131,9 +133,7 @@ class CandidatePromptBuilder:
             "and the assigned branch. For mutation mode, also mention the parent "
             "factor, mutation axis, preserved hypothesis, changed mechanism, and "
             "why it should be less duplicate/correlated than the parent. Do not "
-            "add numeric metrics.\n"
-            "\nMemory priors:\n"
-            f"{memory_text}"
+            "add numeric metrics."
         )
 
     @staticmethod
@@ -204,6 +204,7 @@ class CandidatePromptBuilder:
             "branch; do not switch to a common high-score pattern outside this "
             "branch; do not use sign flips or parameter-only changes as novelty"
         )
+        context["memory_priors"] = job.memory_text
         context["candidate_mode"] = job.candidate_mode
         context["mutation_parent"] = job.mutation_parent
         context["mutation_axis"] = job.mutation_axis
@@ -537,8 +538,8 @@ class CandidateWorkspaceFactory:
         probe.write_text("ok", encoding="utf-8")
 
 
-def _candidate_query(module_name: str, memory_text: str) -> str:
-    return CandidatePromptBuilder().query(module_name, memory_text)
+def _candidate_query(module_name: str, memory_text: str = "") -> str:
+    return CandidatePromptBuilder().query(module_name)
 
 
 def _skills_manifest_for_context() -> list[dict[str, str]]:
@@ -617,7 +618,6 @@ class CandidateJobRunner:
             context=self.prompt_builder.context(self.job),
             query=self.prompt_builder.query(
                 self.job.module_name,
-                self.job.memory_text,
                 candidate_index=self.job.candidate_index,
                 candidate_count=self.job.candidate_count,
                 research_branch=self.job.research_branch,
