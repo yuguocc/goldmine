@@ -1,2 +1,2 @@
 # goldmine
-A auto factor-miber based on RLMs
+A auto factor-miner based on RLMs
