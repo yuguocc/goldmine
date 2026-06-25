@@ -105,6 +105,7 @@ class NoLlmParallelReflexionDemo:
             round_number=round_number,
             round_dir=round_dir,
             memory_text=self.memory_manager.prompt_text(),
+            memory=memory,
         )
         results = [
             self._mock_candidate_result(job, self._candidate_spec(round_number, index))

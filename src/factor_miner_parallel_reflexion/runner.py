@@ -145,6 +145,7 @@ class ParallelReflexionRunner:
             round_number=round_number,
             round_dir=round_dir,
             memory_text=memory_manager.prompt_text(),
+            memory=memory,
         )
         results = self.batch_executor.run(jobs)
         evaluation = self.round_evaluator.evaluate(

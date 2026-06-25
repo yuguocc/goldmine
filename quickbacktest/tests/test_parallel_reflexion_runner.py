@@ -428,6 +428,99 @@ def test_candidate_job_factory_falls_back_to_novelty_without_mutation_parents():
     assert all(job.mutation_axis == "" for job in jobs)
 
 
+def test_candidate_job_factory_prioritizes_high_success_branch_from_memory():
+    output_dir = _workspace_tmp("scheduled_novelty_jobs")
+    config = ParallelReflexionConfig(
+        output_dir=output_dir,
+        factor_library_path=output_dir / "empty_factor_library",
+        candidates=3,
+    )
+    memory = {
+        "state": {
+            "recent_admissions": [
+                {
+                    "research_branch": "Liquidity",
+                    "candidate_mode": "novelty",
+                    "candidate_ic": 0.06,
+                }
+            ],
+            "recent_rejections": [
+                {
+                    "research_branch": "Momentum",
+                    "candidate_mode": "novelty",
+                    "label": "failed",
+                    "ic": -0.01,
+                }
+            ],
+        }
+    }
+
+    jobs = CandidateJobFactory(config).make_jobs(
+        round_number=3,
+        round_dir=output_dir / "round_003",
+        memory_text="memory",
+        memory=memory,
+    )
+
+    assert jobs[0].research_branch.name == "Liquidity"
+    assert [job.candidate_mode for job in jobs] == ["novelty"] * 3
+
+
+def test_candidate_job_factory_prioritizes_successful_mutation_axis():
+    factor_library_path = _workspace_tmp("scheduled_mutation_parents")
+    output_dir = _workspace_tmp("scheduled_mutation_jobs")
+    library = FactorLibrary(factor_library_path)
+    library.save_factor(
+        name="high-ic-parent",
+        signal_code="class HighIcParent: pass\n",
+        metrics={"daily_rank_ic_mean": 0.05, "coverage": 0.9},
+        description="high IC parent",
+        rlm_summary="type: momentum\nhypothesis:\n  hp1: high IC parent\n",
+        signal_class="HighIcParent",
+        status="accepted",
+    )
+    memory = {
+        "state": {
+            "recent_admissions": [
+                {
+                    "research_branch": "Momentum",
+                    "candidate_mode": "mutation",
+                    "mutation_axis": "add_interaction",
+                    "mutation_parent": {"name": "high-ic-parent"},
+                    "candidate_ic": 0.055,
+                }
+            ],
+            "recent_rejections": [
+                {
+                    "research_branch": "Momentum",
+                    "candidate_mode": "mutation",
+                    "mutation_axis": "replace_gate",
+                    "mutation_parent": {"name": "high-ic-parent"},
+                    "label": "duplicate",
+                    "ic": 0.02,
+                }
+            ],
+        }
+    }
+    config = ParallelReflexionConfig(
+        output_dir=output_dir,
+        factor_library_path=factor_library_path,
+        candidates=6,
+    )
+
+    jobs = CandidateJobFactory(config).make_jobs(
+        round_number=3,
+        round_dir=output_dir / "round_003",
+        memory_text="memory",
+        memory=memory,
+    )
+
+    assert [job.candidate_mode for job in jobs[:3]] == ["novelty"] * 3
+    assert [job.candidate_mode for job in jobs[3:]] == ["mutation"] * 3
+    assert jobs[3].mutation_axis == "add_interaction"
+    assert jobs[3].mutation_parent["name"] == "high-ic-parent"
+
+
 def test_economic_reflexion_prompt_uses_factorminer_memory_sections():
     prompt = RoundReflexionAgent(
         ParallelReflexionConfig(candidates=4)

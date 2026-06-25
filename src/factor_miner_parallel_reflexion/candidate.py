@@ -31,6 +31,7 @@ from .models import (
     ParallelReflexionConfig,
     ResearchBranch,
 )
+from .scheduler import CandidateAssignment, ResearchDirectionScheduler
 from .utils import (
     _candidate_ic,
     _finite_float,
@@ -360,30 +361,26 @@ class CandidateJobFactory:
         round_number: int,
         round_dir: Path,
         memory_text: str,
+        memory: dict[str, Any] | None = None,
     ) -> list[CandidateJob]:
         jobs: list[CandidateJob] = []
         mutation_parents = self.mutation_parent_pool()
-        mutation_slots = self.mutation_slots(
+        assignments = ResearchDirectionScheduler().allocate(
+            round_number=round_number,
             candidate_count=self.config.candidates,
-            parent_count=len(mutation_parents),
+            mutation_parents=mutation_parents,
+            mutation_axes=MUTATION_AXES,
+            memory=memory,
         )
-        for index in range(1, self.config.candidates + 1):
+        if not assignments:
+            assignments = self.deterministic_assignments(
+                round_number=round_number,
+                candidate_count=self.config.candidates,
+                mutation_parents=mutation_parents,
+            )
+
+        for index, assignment in enumerate(assignments, start=1):
             module_name = f"RlmGeneratedFactorR{round_number:03d}C{index:03d}"
-            research_branch = branch_for_candidate(round_number, index)
-            candidate_mode = self.candidate_mode(index, mutation_slots=mutation_slots)
-            mutation_parent = None
-            mutation_axis = ""
-            if candidate_mode == "mutation":
-                mutation_slot = index - NOVELTY_CANDIDATE_SLOTS
-                mutation_parent = self.select_mutation_parent(
-                    mutation_parents,
-                    round_number=round_number,
-                    mutation_slot=mutation_slot,
-                )
-                mutation_axis = self.select_mutation_axis(
-                    round_number=round_number,
-                    mutation_slot=mutation_slot,
-                )
             workspace = CandidateWorkspaceFactory(round_dir).create(
                 prefix=f"candidate_{index:03d}_"
             )
@@ -400,17 +397,55 @@ class CandidateJobFactory:
                     ),
                     factor_library_path=self.config.factor_library_path,
                     memory_text=memory_text,
-                    research_branch=research_branch,
+                    research_branch=assignment.research_branch,
                     model=self.config.model,
                     recursive_model=self.config.recursive_model,
                     max_iterations=self.config.max_iterations,
                     enable_rlm_logging=self.config.enable_rlm_logging,
+                    candidate_mode=assignment.candidate_mode,
+                    mutation_parent=assignment.mutation_parent,
+                    mutation_axis=assignment.mutation_axis,
+                )
+            )
+        return jobs
+
+    def deterministic_assignments(
+        self,
+        *,
+        round_number: int,
+        candidate_count: int,
+        mutation_parents: list[dict[str, Any]],
+    ) -> list[CandidateAssignment]:
+        assignments: list[CandidateAssignment] = []
+        mutation_slots = self.mutation_slots(
+            candidate_count=candidate_count,
+            parent_count=len(mutation_parents),
+        )
+        for index in range(1, int(candidate_count) + 1):
+            research_branch = branch_for_candidate(round_number, index)
+            candidate_mode = self.candidate_mode(index, mutation_slots=mutation_slots)
+            mutation_parent = None
+            mutation_axis = ""
+            if candidate_mode == "mutation":
+                mutation_slot = index - NOVELTY_CANDIDATE_SLOTS
+                mutation_parent = self.select_mutation_parent(
+                    mutation_parents,
+                    round_number=round_number,
+                    mutation_slot=mutation_slot,
+                )
+                mutation_axis = self.select_mutation_axis(
+                    round_number=round_number,
+                    mutation_slot=mutation_slot,
+                )
+            assignments.append(
+                CandidateAssignment(
+                    research_branch=research_branch,
                     candidate_mode=candidate_mode,
                     mutation_parent=mutation_parent,
                     mutation_axis=mutation_axis,
                 )
             )
-        return jobs
+        return assignments
 
     @staticmethod
     def mutation_slots(*, candidate_count: int, parent_count: int) -> int:
@@ -775,11 +810,13 @@ def _make_jobs(
     round_number: int,
     round_dir: Path,
     memory_text: str,
+    memory: dict[str, Any] | None = None,
 ) -> list[CandidateJob]:
     return CandidateJobFactory(config).make_jobs(
         round_number=round_number,
         round_dir=round_dir,
         memory_text=memory_text,
+        memory=memory,
     )
 
 

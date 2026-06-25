@@ -18,6 +18,7 @@ src/factor_miner_parallel_reflexion/
   memory.py
   utils.py
   candidate.py
+  scheduler.py
   library.py
   evaluation.py
   portfolio.py
@@ -92,6 +93,20 @@ By default each round uses a 3+3 assignment when enough candidates are enabled:
   `change_horizon_family`.
 - If the factor library has no accepted parent yet, mutation slots fall back to
   novelty mode.
+
+When prior memory contains admissions or rejections, candidate assignment is
+handled by a success-probability scheduler instead of pure rotation. The
+scheduler treats research directions as arms keyed by candidate mode, research
+branch, mutation axis, and mutation parent. It estimates smoothed success
+probability from memory records using accepted factor-library admission as the
+success event, adds an exploration bonus for under-tested directions, and
+penalizes duplicate/error-heavy directions. It preserves the same broad slot
+shape as the fallback policy: novelty slots first, then mutation slots when
+accepted parents are available. Per-round caps prevent all candidates from
+collapsing onto one branch, parent, or axis.
+
+If there is no usable memory yet, assignment falls back to the deterministic
+3+3 rotation described above.
 
 Mutation candidates preserve the parent factor's broad economic family but must
 change the signal mechanism on the assigned axis. Simple sign flips,

@@ -10,6 +10,7 @@ from . import models as _models
 from . import portfolio as _portfolio
 from . import reflexion as _reflexion
 from . import runner as _runner
+from . import scheduler as _scheduler
 from . import utils as _utils
 
 _MODULES = (
@@ -23,6 +24,7 @@ _MODULES = (
     _library,
     _evaluation,
     _reflexion,
+    _scheduler,
     _runner,
 )
 
