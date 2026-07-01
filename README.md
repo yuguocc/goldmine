@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Goldmine
 
 Goldmine is an RLM-driven, language-model-in-the-loop factor-mining research pipeline for building and evaluating quantitative factor libraries on top of Qlib-style market data. It asks language-model candidates to write only the body of a `BaseSignal.compute()` method, evaluates the generated signal through this repository's quickbacktest / Qlib-adapter path, admits factors that pass configured validation and duplicate-control gates, and can evaluate the resulting composite factor both in sample and out of sample.
@@ -188,3 +189,10 @@ The top-level `factor_miner.py` is intentionally retained as a compatibility ali
 ## Notes
 
 This repository is a research system, not an investment product or trading recommendation. Results depend on the local data snapshot, model provider, candidate randomness, Qlib configuration, portfolio assumptions, and transaction-cost settings. Treat example metrics as a workflow smoke test before running broader robustness checks.
+||||||| 73385f2
+# goldmine
+A auto factor-miber based on RLMs
+=======
+# goldmine
+A auto factor-miner based on RLMs
+>>>>>>> af2dd7ecd345ab96ed0da6d8bd6ccfeee935d203
