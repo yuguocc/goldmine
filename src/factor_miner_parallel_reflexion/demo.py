@@ -8,7 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from factor_miner import PROJECT_ROOT, _clean_json_value, _write_json
+from src.factor_miner import PROJECT_ROOT, _clean_json_value, _write_json
 
 from .candidate import CandidateJobFactory
 from .constants import FAST_SCREEN_RANK_IC_THRESHOLD, MEMORY_FILENAME
@@ -46,6 +46,7 @@ class NoLlmDemoConfig:
             memory_size=self.memory_size,
             factor_shift=self.factor_shift,
             run_library_portfolio=False,
+            marginal_contribution_gate=False,
             enable_rlm_logging=False,
         )
 

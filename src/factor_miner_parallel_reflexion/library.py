@@ -115,6 +115,7 @@ class FactorLibraryAdmissionService:
         for rank, candidate in enumerate(ordered, start=1):
             attempt = self._admit_candidate(
                 config=config,
+                round_dir=round_dir,
                 candidate=candidate,
                 attempt_rank=rank,
             )
@@ -160,6 +161,7 @@ class FactorLibraryAdmissionService:
         self,
         *,
         config: ParallelReflexionConfig,
+        round_dir: Path,
         candidate: CandidateResult,
         attempt_rank: int,
     ) -> dict[str, Any]:
@@ -225,9 +227,26 @@ class FactorLibraryAdmissionService:
         )
 
         deterministic_accepted = deterministic_review.get("verdict") == "accepted"
+        marginal_gate = {
+            "available": False,
+            "passed": True,
+            "verdict": "skipped",
+            "reason": "not run because prior admission checks failed",
+        }
+        if deterministic_accepted and correlation_verdict != "rejected":
+            marginal_gate = self.marginal_contribution_gate(
+                config=config,
+                round_dir=round_dir,
+                candidate=candidate,
+                factor_name=factor_name,
+                replacement_matches=replacement_matches,
+            )
+        marginal_accepted = marginal_gate.get("passed") is True
         status = (
             "accepted"
-            if deterministic_accepted and correlation_verdict != "rejected"
+            if deterministic_accepted
+            and correlation_verdict != "rejected"
+            and marginal_accepted
             else "rejected"
         )
         combined_review = {
@@ -239,17 +258,26 @@ class FactorLibraryAdmissionService:
                 "replacement_candidates": replacement_matches,
                 "blocking_matches": blocking_matches,
             },
+            "marginal_contribution_gate": marginal_gate,
         }
         if blocking_matches:
             combined_review["summary"] = (
                 deterministic_review.get("summary", "")
                 + " Rejected by library correlation check."
             ).strip()
+        if marginal_gate.get("passed") is False:
+            combined_review["summary"] = (
+                combined_review.get("summary", "")
+                + " Rejected by marginal contribution gate."
+            ).strip()
 
         if status != "accepted":
+            rejection_reason = "deterministic_review_or_library_correlation_failed"
+            if marginal_gate.get("passed") is False:
+                rejection_reason = "marginal_contribution_gate_failed"
             return {
                 "status": "rejected",
-                "reason": "deterministic_review_or_library_correlation_failed",
+                "reason": rejection_reason,
                 "factor_name": factor_name,
                 "candidate_module": candidate.module_name,
                 "research_branch": candidate.research_branch,
@@ -262,6 +290,7 @@ class FactorLibraryAdmissionService:
                 "deterministic_review": deterministic_review,
                 "library_correlation_check": library_corr,
                 "replacement_check": combined_review["replacement_check"],
+                "marginal_contribution_gate": marginal_gate,
                 "review": combined_review,
             }
 
@@ -312,8 +341,62 @@ class FactorLibraryAdmissionService:
             "deterministic_review": deterministic_review,
             "library_correlation_check": library_corr,
             "replacement_check": combined_review["replacement_check"],
+            "marginal_contribution_gate": marginal_gate,
             "archived_replacements": archived_replacements,
         }
+
+    def marginal_contribution_gate(
+        self,
+        *,
+        config: ParallelReflexionConfig,
+        round_dir: Path,
+        candidate: CandidateResult,
+        factor_name: str,
+        replacement_matches: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        from .portfolio import FactorLibraryPortfolioService
+
+        if candidate.factor_data_csv is None or not candidate.factor_data_csv.exists():
+            return {
+                "available": False,
+                "passed": False,
+                "verdict": "rejected",
+                "reason": "candidate factor_data.csv missing",
+            }
+        if not isinstance(candidate.metrics, dict):
+            return {
+                "available": False,
+                "passed": False,
+                "verdict": "rejected",
+                "reason": "candidate metrics missing",
+            }
+        replacement_names = [
+            str(match.get("factor", "") or "").strip()
+            for match in replacement_matches
+            if isinstance(match, dict)
+        ]
+        output_dir = round_dir / "marginal_contribution" / factor_name
+        try:
+            return FactorLibraryPortfolioService().marginal_contribution_check(
+                config=config,
+                library_root=config.factor_library_path,
+                candidate_name=factor_name,
+                candidate_metrics=candidate.metrics,
+                candidate_factor_data_csv=candidate.factor_data_csv,
+                output_dir=output_dir,
+                replacement_factor_names=replacement_names,
+            )
+        except Exception as exc:
+            result = {
+                "available": False,
+                "passed": False,
+                "verdict": "rejected",
+                "reason": "marginal contribution gate error",
+                "error_type": type(exc).__name__,
+                "error": str(exc),
+            }
+            _write_json(output_dir / "marginal_contribution_gate.json", result)
+            return result
 
     def correlation_check(
         self,
@@ -485,6 +568,7 @@ class FactorLibraryAdmissionService:
             "mutation_parent": attempt.get("mutation_parent"),
             "candidate_ic": attempt.get("candidate_ic"),
             "attempt_rank": attempt.get("attempt_rank"),
+            "marginal_contribution_gate": attempt.get("marginal_contribution_gate"),
             "archived_replacements": attempt.get("archived_replacements", []),
         }
 
@@ -493,7 +577,11 @@ class FactorLibraryAdmissionService:
         review = attempt.get("review")
         review_payload = review if isinstance(review, dict) else {}
         replacement_check = attempt.get("replacement_check")
-        replacement_payload = replacement_check if isinstance(replacement_check, dict) else {}
+        replacement_payload = (
+            replacement_check if isinstance(replacement_check, dict) else {}
+        )
+        marginal_gate = attempt.get("marginal_contribution_gate")
+        marginal_payload = marginal_gate if isinstance(marginal_gate, dict) else {}
         return {
             "attempt_rank": attempt.get("attempt_rank"),
             "status": attempt.get("status"),
@@ -507,6 +595,8 @@ class FactorLibraryAdmissionService:
             "factor_name": attempt.get("factor_name"),
             "review_verdict": review_payload.get("verdict"),
             "replacement_verdict": replacement_payload.get("verdict"),
+            "marginal_contribution_verdict": marginal_payload.get("verdict"),
+            "marginal_contribution_delta": marginal_payload.get("delta_rank_ic"),
         }
 
     @staticmethod

@@ -69,6 +69,23 @@ class ParallelReflexionCLI:
             ),
         )
         parser.add_argument(
+            "--skip-marginal-contribution-gate",
+            action="store_true",
+            help=(
+                "Do not require each admitted factor to improve the training-window "
+                "factor-library composite rank IC."
+            ),
+        )
+        parser.add_argument(
+            "--marginal-contribution-min-delta",
+            type=float,
+            default=0.0,
+            help=(
+                "Minimum required delta in composite rank IC when adding or replacing "
+                "a library factor. Default: 0.0."
+            ),
+        )
+        parser.add_argument(
             "--skip-oos-test",
             action="store_true",
             help="Skip the final out-of-sample composite test.",
@@ -138,6 +155,8 @@ class ParallelReflexionCLI:
             memory_size=args.memory_size,
             run_portfolio=args.run_portfolio,
             run_library_portfolio=not args.skip_library_portfolio,
+            marginal_contribution_gate=not args.skip_marginal_contribution_gate,
+            marginal_contribution_min_delta=args.marginal_contribution_min_delta,
             run_oos_test=not args.skip_oos_test,
             oos_start=args.oos_start,
             oos_end=args.oos_end,

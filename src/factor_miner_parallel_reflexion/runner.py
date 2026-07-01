@@ -5,7 +5,7 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
-from factor_miner import _clean_json_value, _write_json
+from src.factor_miner import _clean_json_value, _write_json
 
 from .candidate import CandidateBatchExecutor, CandidateJobFactory
 from .constants import DEFAULT_FACTOR_LIBRARY_PATH, DEFAULT_OUTPUT_DIR, MEMORY_FILENAME

@@ -566,6 +566,48 @@ def test_round_reflexion_specs_run_only_economic_phase(monkeypatch):
     assert [item["phase"] for item in result] == ["economic_hypothesis"]
 
 
+def test_reflexion_run_phase_keeps_final_answer_context_out_of_query(monkeypatch):
+    from src.factor_miner_parallel_reflexion import reflexion as reflexion_module
+    from src.factor_miner_parallel_reflexion.utils import _ensure_rlm_import_path
+
+    _ensure_rlm_import_path()
+    import rlm.rlm_repl as rlm_repl
+
+    captured = {}
+
+    class FakeResult:
+        response = "reflection"
+        metadata = {"ok": True}
+
+    class FakeRLM_REPL:
+        def __init__(self, **kwargs):
+            captured["init"] = kwargs
+
+        def completion(self, *, context, query):
+            captured["context"] = context
+            captured["query"] = query
+            return FakeResult()
+
+    monkeypatch.setattr(reflexion_module, "_ensure_rlm_import_path", lambda: None)
+    monkeypatch.setattr(rlm_repl, "RLM_REPL", FakeRLM_REPL)
+
+    final_answer_context = "candidate final answers stay in context"
+    query_prompt = "reflection prompt only"
+    result, _trajectory_path = RoundReflexionAgent(
+        ParallelReflexionConfig()
+    ).run_phase(
+        phase="economic_hypothesis",
+        prompt=query_prompt,
+        round_number=1,
+        round_dir=_workspace_tmp("reflection_context_query"),
+        context=final_answer_context,
+    )
+
+    assert result == "reflection"
+    assert captured["context"] == final_answer_context
+    assert captured["query"] == query_prompt
+    assert final_answer_context not in captured["query"]
+
 def test_memory_seed_success_patterns_deduplicates():
     manager = RlmFactorMemoryManager()
 
@@ -599,6 +641,23 @@ def test_cli_enables_final_oos_by_default_and_can_skip_it():
 
     assert default_config.run_oos_test is True
     assert skipped_config.run_oos_test is False
+
+
+def test_cli_enables_marginal_contribution_gate_by_default_and_can_skip_it():
+    cli = ParallelReflexionCLI()
+
+    default_config = cli.config_from_args(cli.parse_args(["--rounds", "1"]))
+    skipped_config = cli.config_from_args(
+        cli.parse_args(["--rounds", "1", "--skip-marginal-contribution-gate"])
+    )
+    stricter_config = cli.config_from_args(
+        cli.parse_args(["--rounds", "1", "--marginal-contribution-min-delta", "0.003"])
+    )
+
+    assert default_config.marginal_contribution_gate is True
+    assert default_config.marginal_contribution_min_delta == 0.0
+    assert skipped_config.marginal_contribution_gate is False
+    assert stricter_config.marginal_contribution_min_delta == 0.003
 
 
 def test_cli_default_training_and_oos_dates():

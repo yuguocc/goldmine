@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from factor_miner import FactorMinerCaseConfig
+from src.factor_miner import FactorMinerCaseConfig
 
 from .constants import (
     DEFAULT_OUTPUT_DIR,
@@ -14,6 +14,7 @@ from .constants import (
     DEFAULT_RLM_MODEL,
     DEFAULT_TRAIN_END,
     DEFAULT_TRAIN_START,
+    MARGINAL_CONTRIBUTION_MIN_DELTA,
 )
 
 
@@ -47,6 +48,8 @@ class ParallelReflexionConfig:
     memory_size: int = 5
     run_portfolio: bool = False
     run_library_portfolio: bool = True
+    marginal_contribution_gate: bool = True
+    marginal_contribution_min_delta: float = MARGINAL_CONTRIBUTION_MIN_DELTA
     run_oos_test: bool = True
     oos_start: str | None = DEFAULT_OOS_START
     oos_end: str | None = DEFAULT_OOS_END

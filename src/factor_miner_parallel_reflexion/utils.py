@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from factor_miner import LIBS_ROOT, _clean_json_value, _write_json
+from src.factor_miner import LIBS_ROOT, _clean_json_value, _write_json
 
 from .constants import FAST_SCREEN_RANK_IC_THRESHOLD, MAX_SIGNAL_SOURCE_CHARS
 from .memory import RlmFactorMemoryManager
@@ -337,3 +337,5 @@ def _validate_config(config: Any) -> None:
         raise ValueError("max_workers must be >= 1")
     if config.memory_size < 1:
         raise ValueError("memory_size must be >= 1")
+    if _finite_float(config.marginal_contribution_min_delta) is None:
+        raise ValueError("marginal_contribution_min_delta must be finite")

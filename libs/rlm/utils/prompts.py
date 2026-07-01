@@ -58,7 +58,10 @@ answer["ready"] = True
 Think step by step carefully, plan, and execute this plan immediately in your response -- do not just say "I will do this" or "I will do that". Output to the REPL environment and recursive LLMs as much as possible. Remember to explicitly answer the original query in your final answer.
 """
 
-def build_system_prompt(custom_tools: dict[str, Any] | None = None) -> list[Dict[str, str]]:
+
+def build_system_prompt(
+    custom_tools: dict[str, Any] | None = None,
+) -> list[Dict[str, str]]:
     custom_tools_text = format_tools_for_prompt(custom_tools)
     custom_tools_section = ""
     if custom_tools_text:
@@ -87,20 +90,32 @@ def build_system_prompt(custom_tools: dict[str, Any] | None = None) -> list[Dict
             )
 
     return [
-        {
-            "role": "system",
-            "content": REPL_SYSTEM_PROMPT + custom_tools_section
-        },
+        {"role": "system", "content": REPL_SYSTEM_PROMPT + custom_tools_section},
     ]
 
 
 # Prompt at every step to query root LM to make a decision
-USER_PROMPT = """Think step-by-step on what to do using the REPL environment (which contains the context) to answer the original query: \"{query}\".\n\nContinue using the REPL environment, which has the `context` variable, and querying sub-LLMs by writing to ```repl``` tags, and determine your answer. Your next action:""" 
-def next_action_prompt(query: str, iteration: int = 0, final_answer: bool = False) -> Dict[str, str]:
+USER_PROMPT = """Think step-by-step on what to do using the REPL environment (which contains the context) to answer the original query: \"{query}\".\n\nContinue using the REPL environment, which has the `context` variable, and querying sub-LLMs by writing to ```repl``` tags, and determine your answer. Your next action:"""
+
+
+def next_action_prompt(
+    query: str, iteration: int = 0, final_answer: bool = False
+) -> Dict[str, str]:
     if final_answer:
-        return {"role": "user", "content": "Based on all the information you have, execute a `repl` block that sets `answer[\"content\"]` to the final answer and then sets `answer[\"ready\"] = True`."}
+        return {
+            "role": "user",
+            "content": 'Based on all the information you have, execute a `repl` block that sets `answer["content"]` to the final answer and then sets `answer["ready"] = True`.',
+        }
     if iteration == 0:
         safeguard = "You have not interacted with the REPL environment or seen your context yet. Your next action should be to look through, don't just provide a final answer yet.\n\n"
         return {"role": "user", "content": safeguard + USER_PROMPT.format(query=query)}
     else:
-        return {"role": "user", "content": "The history before is your previous interactions with the REPL environment. " + USER_PROMPT.format(query=query)}
+        return {
+            "role": "user",
+            "content": "The history before is your previous interactions with the REPL environment. "
+            + USER_PROMPT.format(query=query),
+        }
+        # return {
+        #     "role": "user",
+        #     "content": "The history before is your previous interactions with the REPL environment.",
+        # }

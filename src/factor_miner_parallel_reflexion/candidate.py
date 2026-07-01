@@ -8,7 +8,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 
-from factor_miner import (
+from src.factor_miner import (
     FactorMinerCaseConfig,
     _factor_generation_context,
     _import_qlib_adapter,

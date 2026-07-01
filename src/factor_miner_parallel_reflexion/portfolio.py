@@ -7,7 +7,7 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
-from factor_miner import _import_qlib_adapter, _write_json
+from src.factor_miner import _import_qlib_adapter, _write_json
 
 from .constants import FAST_SCREEN_RANK_IC_THRESHOLD
 from .models import ParallelReflexionConfig
@@ -191,6 +191,142 @@ class FactorLibraryPortfolioService:
                 "no accepted library factors with rank IC above threshold "
                 "and factor_data.csv"
             ),
+        )
+
+    def marginal_contribution_check(
+        self,
+        *,
+        config: ParallelReflexionConfig,
+        library_root: Path,
+        candidate_name: str,
+        candidate_metrics: dict[str, Any],
+        candidate_factor_data_csv: Path,
+        output_dir: Path,
+        replacement_factor_names: list[str] | None = None,
+    ) -> dict[str, Any]:
+        from quickbacktest import FactorLibrary
+
+        output_dir.mkdir(parents=True, exist_ok=True)
+        min_delta = _finite_float(config.marginal_contribution_min_delta)
+        if min_delta is None:
+            min_delta = 0.0
+        if not config.marginal_contribution_gate:
+            return self._write_gate_result(
+                output_dir,
+                {
+                    "available": False,
+                    "passed": True,
+                    "verdict": "skipped",
+                    "reason": "marginal contribution gate disabled",
+                    "min_delta": min_delta,
+                },
+            )
+
+        library = FactorLibrary(library_root)
+        baseline_components = self.load_components(
+            library_root=library_root,
+            library=library,
+        )
+        if not baseline_components:
+            return self._write_gate_result(
+                output_dir,
+                {
+                    "available": True,
+                    "passed": True,
+                    "verdict": "skipped",
+                    "reason": "no existing accepted components",
+                    "baseline_component_count": 0,
+                    "min_delta": min_delta,
+                },
+            )
+
+        candidate_component = self.component_from_factor_data(
+            name=candidate_name,
+            metrics=candidate_metrics,
+            factor_data_csv=candidate_factor_data_csv,
+        )
+        if candidate_component is None:
+            return self._write_gate_result(
+                output_dir,
+                {
+                    "available": False,
+                    "passed": False,
+                    "verdict": "rejected",
+                    "reason": "candidate component unavailable",
+                    "baseline_component_count": len(baseline_components),
+                    "min_delta": min_delta,
+                },
+            )
+
+        replacement_names = {
+            str(name)
+            for name in (replacement_factor_names or [])
+            if str(name or "").strip()
+        }
+        replacement_names.add(candidate_name)
+        with_candidate_components = [
+            item
+            for item in baseline_components
+            if str(item.get("name", "")) not in replacement_names
+        ]
+        with_candidate_components.append(candidate_component)
+
+        baseline = self.composite_rank_ic_for_gate(
+            components=baseline_components,
+            config=config,
+            output_dir=output_dir / "baseline",
+        )
+        with_candidate = self.composite_rank_ic_for_gate(
+            components=with_candidate_components,
+            config=config,
+            output_dir=output_dir / "with_candidate",
+        )
+        baseline_ic = _finite_float(baseline.get("rank_ic"))
+        with_candidate_ic = _finite_float(with_candidate.get("rank_ic"))
+        if baseline_ic is None or with_candidate_ic is None:
+            return self._write_gate_result(
+                output_dir,
+                {
+                    "available": False,
+                    "passed": False,
+                    "verdict": "rejected",
+                    "reason": "composite rank IC unavailable",
+                    "baseline": baseline,
+                    "with_candidate": with_candidate,
+                    "baseline_component_count": len(baseline_components),
+                    "with_candidate_component_count": len(with_candidate_components),
+                    "replacement_factor_names": sorted(
+                        replacement_names - {candidate_name}
+                    ),
+                    "min_delta": min_delta,
+                },
+            )
+
+        delta = with_candidate_ic - baseline_ic
+        passed = delta >= min_delta
+        return self._write_gate_result(
+            output_dir,
+            {
+                "available": True,
+                "passed": passed,
+                "verdict": "accepted" if passed else "rejected",
+                "reason": (
+                    "candidate improves or preserves composite rank IC"
+                    if passed
+                    else "candidate reduces composite rank IC"
+                ),
+                "baseline_rank_ic": baseline_ic,
+                "with_candidate_rank_ic": with_candidate_ic,
+                "delta_rank_ic": delta,
+                "min_delta": min_delta,
+                "baseline": baseline,
+                "with_candidate": with_candidate,
+                "baseline_component_count": len(baseline_components),
+                "with_candidate_component_count": len(with_candidate_components),
+                "replacement_factor_names": sorted(
+                    replacement_names - {candidate_name}
+                ),
+            },
         )
 
     def build_oos_composite_factor(
@@ -453,6 +589,53 @@ class FactorLibraryPortfolioService:
             reverse=True,
         )
 
+    def component_from_factor_data(
+        self,
+        *,
+        name: str,
+        metrics: dict[str, Any],
+        factor_data_csv: Path,
+    ) -> dict[str, Any] | None:
+        weight = _factor_metric_ic(metrics)
+        if weight is None or weight <= FAST_SCREEN_RANK_IC_THRESHOLD:
+            return None
+        series = _series_from_factor_csv(factor_data_csv)
+        if series is None:
+            return None
+        return {
+            "name": name,
+            "weight": weight,
+            "ic_name": self.metric_name(metrics),
+            "factor_data_csv": str(factor_data_csv),
+            "series": series,
+            "close_series": self.close_series_from_factor_csv(factor_data_csv),
+        }
+
+    def composite_rank_ic_for_gate(
+        self,
+        *,
+        components: list[dict[str, Any]],
+        config: ParallelReflexionConfig,
+        output_dir: Path,
+    ) -> dict[str, Any]:
+        output_dir.mkdir(parents=True, exist_ok=True)
+        composite = self.build_composite_from_components(
+            components=components,
+            output_dir=output_dir,
+            empty_reason="no components available for marginal contribution gate",
+        )
+        if composite.get("status") != "built":
+            return self.compact_composite_gate_result(composite=composite)
+        analysis = self.analyze_composite_factor(
+            composite=composite,
+            config=config,
+            output_dir=output_dir,
+        )
+        return self.compact_composite_gate_result(
+            composite=composite,
+            analysis=analysis,
+        )
+
     @staticmethod
     def oos_period(config: ParallelReflexionConfig) -> dict[str, Any]:
         import pandas as pd
@@ -555,6 +738,32 @@ class FactorLibraryPortfolioService:
         return ""
 
     @staticmethod
+    def compact_composite_gate_result(
+        *,
+        composite: dict[str, Any],
+        analysis: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        analysis_payload = analysis if isinstance(analysis, dict) else {}
+        return {
+            "status": composite.get("status"),
+            "reason": composite.get("reason"),
+            "component_count": composite.get("component_count"),
+            "score_rows": composite.get("score_rows"),
+            "composite_factor_csv": composite.get("composite_factor_csv"),
+            "composite_analysis_factor_csv": composite.get(
+                "composite_analysis_factor_csv"
+            ),
+            "weights_json": composite.get("weights_json"),
+            "analysis_status": analysis_payload.get("status"),
+            "analysis_json": analysis_payload.get("analysis_json"),
+            "rank_ic": analysis_payload.get("rank_ic"),
+            "rank_ic_name": analysis_payload.get("rank_ic_name"),
+            "error_type": composite.get("error_type")
+            or analysis_payload.get("error_type"),
+            "error": composite.get("error") or analysis_payload.get("error"),
+        }
+
+    @staticmethod
     def analyze_composite_factor(
         *,
         composite: dict[str, Any],
@@ -634,6 +843,11 @@ class FactorLibraryPortfolioService:
     @staticmethod
     def _write_result(output_dir: Path, result: dict[str, Any]) -> dict[str, Any]:
         _write_json(output_dir / "library_portfolio.json", result)
+        return result
+
+    @staticmethod
+    def _write_gate_result(output_dir: Path, result: dict[str, Any]) -> dict[str, Any]:
+        _write_json(output_dir / "marginal_contribution_gate.json", result)
         return result
 
 
