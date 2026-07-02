@@ -123,6 +123,34 @@ A full run writes self-contained artifacts under its output directory:
 | `round_XXX/` | Candidate workspaces, trajectories, economic context, reflexion output, and admission logs. |
 | `fig_*.png` | Summary plots for inspection and reporting. |
 
+## Installation
+
+Python 3.11 is recommended. From the repository root, create an environment and install the core dependencies first:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+Dependency files are split by workflow:
+
+| File | Use Case |
+| --- | --- |
+| `requirements.txt` | Core dependencies for the README no-LLM smoke demo and factor-miner CLI imports. |
+| `requirements-qlib.txt` | Adds Qlib, A-share data preparation, and TA-Lib support for full factor evaluation and OOS portfolio runs. |
+| `requirements-dev.txt` | Adds pytest for the focused validation commands below. |
+| `requirements-optional.txt` | Adds legacy quickbacktest, Backtrader, DuckDB, and data utility dependencies that are not required by the README smoke demo. |
+
+Install the Qlib stack before running commands that evaluate real factors against local market data:
+
+```powershell
+python -m pip install -r requirements-qlib.txt
+```
+
+The no-LLM smoke demo does not require a model provider or Qlib data. The full miner expects local Qlib data under `.qlib/qlib_data/cn_data` by default, or a custom path through `--provider-uri`.
+
 ## Validation
 
 Focused checks for the migrated factor-miner entry points:
@@ -136,7 +164,7 @@ This repository is a research system, not an investment product or trading recom
 
 ## Quick Example
 
-This repository currently does not ship a package manifest, so prepare a Python environment with the dependencies used by `quickbacktest`, Qlib, pandas, NumPy, matplotlib, and pytest. The pipeline expects local Qlib data under `.qlib/qlib_data/cn_data` by default, or a custom path through `--provider-uri`.
+After installing `requirements.txt`, run the no-LLM demo to verify the local pipeline. Install `requirements-qlib.txt` before running Qlib-backed factor evaluation or OOS portfolio tests. The full pipeline expects local Qlib data under `.qlib/qlib_data/cn_data` by default, or a custom path through `--provider-uri`.
 
 Entry points:
 
@@ -151,7 +179,9 @@ Run a deterministic no-LLM smoke demo:
 
 ```powershell
 python -B -m src.factor_miner_parallel_reflexion.demo `
-  --output-dir .\runs\demo_parallel_reflexion
+  --output-dir .\runs\demo_parallel_reflexion `
+  --rounds 1 `
+  --candidates 3
 ```
 
 Run the parallel reflexion miner:

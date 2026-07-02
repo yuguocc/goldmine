@@ -1,0 +1,3 @@
+# Test dependencies.
+-r requirements-qlib.txt
+pytest>=8.0

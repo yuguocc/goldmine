@@ -1,8 +1,6 @@
 from typing import List, Literal, Optional,Dict, Callable,Any, Type
-from ddgs import results
 import numpy as np
 import pandas as pd
-import talib as ta
 from loguru import logger
 from pathlib import Path
 import csv

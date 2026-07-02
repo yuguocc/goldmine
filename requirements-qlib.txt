@@ -1,0 +1,6 @@
+# Extra dependencies for Qlib-backed factor evaluation, OOS portfolio tests,
+# and local A-share data preparation.
+-r requirements.txt
+pyqlib>=0.9.7
+baostock>=0.8.8
+TA-Lib>=0.6.0

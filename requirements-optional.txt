@@ -1,0 +1,10 @@
+# Optional legacy quickbacktest and data utility dependencies.
+# These are not required for the README no-LLM smoke demo.
+-r requirements-qlib.txt
+backtrader>=1.9.78
+empyrical>=0.5.5
+duckdb>=0.10
+libcst>=1.0
+ddgs>=9.0
+requests>=2.31
+polars>=0.20
