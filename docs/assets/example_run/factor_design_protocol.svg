@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1632" height="505" viewBox="0 0 1632 505">
+  <title>Factor design protocol</title>
+  <desc>Hypothesis leads to Factor, Compute, and Validate. Compute points down to a Saved Factor Card, which points left to Guardrails and right to Memory Feedback.</desc>
+  <rect width="1632" height="505" fill="white"/>
+  <g fill="#a9b6c3">
+    <path d="M321 85H396.5V70L427 100.5L396.5 131V116H321Z"/>
+    <path d="M758 85H833V70L863.5 100.5L833 131V116H758Z"/>
+    <path d="M1170 85H1245.5V70L1276 100.5L1245.5 131V116H1170Z"/>
+    <path d="M1009.5 214H1036.5V336H1050L1023 365L996 336H1009.5Z"/>
+    <path d="M416 411.5H341.5V396L311 426.5L341.5 457V442H416Z"/>
+    <path d="M1172 411.5H1246.5V396L1277 426.5L1246.5 457V442H1172Z"/>
+  </g>
+  <g fill="white" stroke="black" stroke-width="3.5">
+    <rect x="20.5" y="23.5" width="270" height="149" rx="15"/>
+    <rect x="458.5" y="23.5" width="270" height="149" rx="15"/>
+    <rect x="888.5" y="23.5" width="272" height="149" rx="15"/>
+    <rect x="1286.5" y="23.5" width="325" height="149" rx="15"/>
+    <rect x="460.5" y="379.5" width="701" height="94" rx="9"/>
+  </g>
+  <g fill="none" stroke="black" stroke-width="2" stroke-dasharray="7 5">
+    <rect x="20" y="379" width="270" height="94" rx="8"/>
+    <rect x="1288" y="379" width="325" height="94" rx="8"/>
+  </g>
+  <g fill="black" font-family="Times New Roman, Times, serif" font-size="34" text-anchor="middle">
+    <text x="155.5" y="110">1. Hypothesis</text>
+    <text x="593.5" y="110">2. Factor</text>
+    <text x="1024.5" y="110">3. Compute</text>
+    <text x="1449" y="110">4. Validate</text>
+    <text x="155" y="438">Guardrails</text>
+    <text x="811" y="438">Saved Factor Card</text>
+    <text x="1450.5" y="438">Memory Feedback</text>
+  </g>
+</svg>

@@ -6,7 +6,7 @@ The current focus is parallel reflexion factor mining: multiple candidates are g
 
 ## System Structure
 
-![System structure](docs/assets/example_run/system_structure.png)
+![System structure](docs/assets/example_run/system_structure.svg)
 
 ```text
 .
@@ -34,7 +34,7 @@ The current focus is parallel reflexion factor mining: multiple candidates are g
 
 Each candidate keeps the economic idea separate from the implementation. The final answer saved into the factor card follows the `RLM_SUMMARY_SPEC` contract: `hp1` states the primary predictive hypothesis, `hp2` records a condition, risk, or direction-control note, `factor` gives the concise formula or pandas-level construction, `explanation` gives the intuition, and `validation` records the `submit_compute` status without embedding numeric metrics.
 
-![Factor design protocol](docs/assets/example_run/factor_design_protocol.png)
+![Factor design protocol](docs/assets/example_run/factor_design_protocol.svg)
 
 The RLM writes only the `compute()` body and assigns the final wide DataFrame to `signal`; imports, class definitions, return statements, and metric values stay outside the generated summary.
 

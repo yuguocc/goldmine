@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1449" height="929" viewBox="0 0 1449 929">
+  <title>Factor generation system structure</title>
+  <desc>Candidate factors pass IC screening, correlation and marginal contribution checks into a factor library. Economic reflection records successful and forbidden directions, feeding back into factor generation.</desc>
+  <rect width="1449" height="929" fill="white"/>
+  <g fill="none" stroke="#000" stroke-width="3" stroke-linejoin="round">
+    <path d="M1380 793.5H1415V89.5H573M586 82.5L573 89.5L586 96.5"/>
+  </g>
+  <g fill="#a9b6c3">
+    <path d="M297.5 138H323.5V201.5H336L310.5 227L285 201.5H297.5Z"/>
+    <path d="M297.5 295H323.5V310H336L310.5 325L285 310H297.5Z"/>
+    <path d="M601 518.5H692.5V506L718 531.5L692.5 557V544.5H601Z"/>
+    <path d="M297.5 701H323.5V765.5H336L310.5 791L285 765.5H297.5Z"/>
+    <path d="M601 827.5H692.5V815L718 840.5L692.5 866V853.5H601Z"/>
+    <path d="M1246.5 638H1272.5V662H1285L1259.5 687L1234 662H1246.5Z"/>
+  </g>
+  <g fill="none" stroke="#000" stroke-width="1" stroke-dasharray="6 4">
+    <rect x="43.5" y="338.5" width="537" height="337" rx="35"/>
+    <rect x="734.5" y="684.5" width="645" height="217" rx="24"/>
+  </g>
+  <g fill="white" stroke="#000" stroke-width="3">
+    <rect x="65.5" y="49.5" width="506" height="80" rx="8"/>
+    <rect x="196.5" y="233.5" width="229" height="48" rx="5"/>
+    <rect x="59.5" y="411.5" width="228" height="80" rx="8"/>
+    <rect x="336.5" y="411.5" width="229" height="80" rx="8"/>
+    <rect x="59.5" y="557.5" width="228" height="80" rx="8"/>
+    <rect x="336.5" y="557.5" width="229" height="80" rx="8"/>
+    <rect x="725.5" y="411.5" width="156" height="215" rx="16"/>
+    <rect x="887.5" y="411.5" width="241" height="217" rx="22"/>
+    <rect x="1133.5" y="411.5" width="252" height="218" rx="22"/>
+    <rect x="59.5" y="801.5" width="491" height="80" rx="8"/>
+    <rect x="749.5" y="692.5" width="599" height="80" rx="8"/>
+    <rect x="749.5" y="806.5" width="605" height="80" rx="8"/>
+  </g>
+  <g fill="#000" font-family="Times New Roman, Times, serif" font-size="28" text-anchor="middle">
+    <text x="318.5" y="99">Factor generation</text>
+    <text x="311" y="267">Scheduler</text>
+    <text x="318.5" y="389" font-size="32">novelty/mutation</text>
+    <text x="173.5" y="462">Candidate 1</text>
+    <text x="451" y="462">Candidate 2</text>
+    <text x="307" y="531" font-size="32" letter-spacing="3">.........</text>
+    <text x="173.5" y="607">Candidate n-1</text>
+    <text x="451" y="607">Candidate n</text>
+    <text x="660" y="491">Signals</text>
+    <text x="803.5" y="446">Step 1</text>
+    <text x="803.5" y="512">IC</text>
+    <text x="803.5" y="545">screening</text>
+    <text x="803.5" y="611">IC &gt; 0.01</text>
+    <text x="1008" y="447">Step 2</text>
+    <text x="1008" y="513">Correlation</text>
+    <text x="1008" y="546">check</text>
+    <text x="1008" y="612">correlation&lt;0.95</text>
+    <text x="1259.5" y="448">Step 3</text>
+    <text x="1259.5" y="514">Marginal</text>
+    <text x="1259.5" y="547">contribution check</text>
+    <text x="1259.5" y="613">d&gt;0</text>
+    <text x="419" y="726">Economic</text>
+    <text x="419" y="759">hypothesis</text>
+    <text x="305" y="851">Economic Reflection</text>
+    <text x="1049" y="743">Factor library</text>
+    <text x="1052" y="856">Successful directions, Forbidden directions</text>
+  </g>
+</svg>
